@@ -1,7 +1,7 @@
 require("dotenv").config();
 
-const app = require("./src/app.js");
-const connectToDB = require("./src/config/db.js");
+const app = require("./app.js");
+const connectToDB = require("./config/db.js");
 
 const PORT = 6969;
 
@@ -12,3 +12,4 @@ app.listen(PORT, () => {
 });
 
 
+// 02:14:49
