@@ -1,126 +1,87 @@
-Backend Ledger
-Backend Ledger is a Node.js + Express API for managing user accounts, balances, and ledger-based money transfers. It is built with MongoDB and Mongoose, and includes authentication, protected routes, transaction processing, and email notifications.
+# backend-ledger
 
-Features
-User registration, login, and logout
-JWT-based authentication with cookie support
-Protected account creation and balance lookup
-Ledger-style debit/credit tracking
-Transaction creation with idempotency protection
-MongoDB session-based transaction flow
-System user support for initial funding transactions
-Email notifications for registration and transaction events
-Blacklisted token handling for secure logout
-Tech Stack
-Node.js
-Express
-MongoDB + Mongoose
-JWT
-bcryptjs
-Nodemailer
-dotenv
-cookie-parser
-Project Structure
-bash
-backend-ledger/
-├── server.js
-├── package.json
-├── package-lock.json
-├── .gitignore
-├── src/
-│   ├── app.js
-│   ├── config/
-│   │   └── db.js
-│   ├── controllers/
-│   │   ├── account.controller.js
-│   │   ├── auth.controller.js
-│   │   └── transaction.controller.js
-│   ├── middleware/
-│   │   └── auth.middleware.js
-│   ├── models/
-│   │   ├── account.model.js
-│   │   ├── blackList.model.js
-│   │   ├── ledger.model.js
-│   │   ├── transaction.model.js
-│   │   └── user.model.js
-│   ├── routes/
-│   │   ├── account.routes.js
-│   │   ├── auth.routes.js
-│   │   └── transaction.routes.js
-│   └── services/
-│       └── email.service.js
-Getting Started
-Prerequisites
-Node.js
-MongoDB instance
-Email service credentials for Nodemailer
-Installation
-bash
+Minimal Node.js + Express API for user auth and account creation, backed by MongoDB/Mongoose.
+
+## What it does
+
+- `POST /api/auth/register` — create user, hash password, return JWT + `token` cookie, send registration email
+- `POST /api/auth/login` — verify credentials, return JWT + `token` cookie
+- `POST /api/accounts` — protected, creates an account (`INR`, `ACTIVE` by default) for the logged-in user
+
+Auth accepts `Authorization: Bearer <token>` or `token` cookie.
+
+## Tech stack
+
+Node.js, Express 5, Mongoose 9, JWT, bcryptjs, cookie-parser, Nodemailer, dotenv.
+
+## Project structure
+
+```
+server.js            # entry, listens on 6969
+src/app.js           # express app, mounts /api/auth + /api/accounts
+src/config/db.js     # mongoose connect via MONGO_URI
+src/routes/          # auth.routes.js, account.routes.js
+src/controllers/     # auth.controller.js, account.controller.js
+src/middleware/auth.middleware.js
+src/models/          # user.models.js, account.model.js
+src/services/email.service.js
+```
+
+## Getting started
+
+Prerequisites: Node 18+, a MongoDB URI, Gmail OAuth creds for email.
+
+```bash
 npm install
-Environment Variables
-Create a .env file in the project root:
+```
 
-env
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-EMAIL_USER=your_email_address
-CLIENT_ID=your_oauth_client_id
-CLIENT_SECRET=your_oauth_client_secret
-REFRESH_TOKEN=your_oauth_refresh_token
-Run the app
-Development mode:
+Create `.env`:
 
-bash
-npm run dev
-Production mode:
+```env
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=...
+EMAIL_USER=...
+CLIENT_ID=...
+CLIENT_SECRET=...
+REFRESH_TOKEN=...
+```
 
-bash
-npm start
-The server runs on port 3000 by default.
+Run:
 
-API Endpoints
-Authentication
-HTTP
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/logout
-Accounts
-HTTP
-POST /api/accounts/
-GET /api/accounts/
-GET /api/accounts/balance/:accountId
-Transactions
-HTTP
-POST /api/transactions/
-POST /api/transactions/system/initial-funds
-Authentication Flow
-Users register with name, email, and password
-Passwords are hashed before saving
-JWT tokens are issued on successful login or registration
-Tokens are validated through middleware
-Logged-out tokens are stored in a blacklist to prevent reuse
-Ledger Behavior
-The application tracks ledger entries using debit and credit records for each account. Account balances are derived from aggregated ledger data.
+```bash
+npm run dev   # nodemon server.js
+npm start     # node server.js
+```
 
-A transfer flow includes:
+Server: `http://localhost:6969`.
 
-validating request inputs
-checking idempotency key
-verifying account status
-validating balance
-creating pending transaction records
-writing debit and credit ledger entries
-marking the transaction as completed
-sending email notifications
-Notes
-This project is focused on backend logic and API behavior rather than a frontend UI.
-Email sending relies on Gmail OAuth configuration via environment variables.
-There are currently no automated tests defined in the project scripts.
-License
-This project uses the ISC license as declared in package.json.
+## API
 
-Contributing
-Contributions are welcome. If you want to improve validation, add tests, or harden the transaction flow, open a pull request with a clear description of the change.
+Register:
 
-Contact
-For questions or support, please reach out via the repository owner or maintainers on GitHub.
+```bash
+curl -X POST http://localhost:6969/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"A","email":"a@x.com","password":"secret123"}'
+```
+
+Login:
+
+```bash
+curl -X POST http://localhost:6969/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"a@x.com","password":"secret123"}'
+```
+
+Create account (protected):
+
+```bash
+curl -X POST http://localhost:6969/api/accounts \
+  -H "Authorization: Bearer <token>"
+```
+
+## Notes
+
+- No tests (`npm test` is a placeholder).
+- Registration email failures don't fail registration.
+- Port is hardcoded to `6969` in `server.js`.
