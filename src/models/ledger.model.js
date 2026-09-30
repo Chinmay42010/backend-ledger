@@ -1,4 +1,4 @@
-const mongoose = require("mognoose");
+const mongoose = require("mongoose");
 
 const ledgerSchema = mongoose.Schema({
     account: {

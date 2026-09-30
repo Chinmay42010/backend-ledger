@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const transactionSchema = new mongoose.Schema(
     {
-        fromAccpunt: {
+        fromAccount: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "account",
             required: [
@@ -31,7 +31,7 @@ const transactionSchema = new mongoose.Schema(
         },
         amount: {
             type: Number,
-            requires: [true, "Amount is required to make a transaction"],
+            required: [true, "Amount is required to make a transaction"],
             min: [0, "Transaction amount cannot be negative"],
         },
         idempotencyKey: {
