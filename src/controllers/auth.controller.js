@@ -67,6 +67,13 @@ async function userLoginController(req, res) {
     try {
         const { email, password } = req.body;
 
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required",
+                status: "Failed",
+            });
+        }
+
         const user = await userModel.findOne({ email }).select("+password");
 
         if (!user) {
@@ -105,25 +112,32 @@ async function userLoginController(req, res) {
 }
 
 async function userLogoutController(req, res) {
-    const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+    try {
+        const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
-    if (!token) {
-        return res.status(400).json({
+        if (!token) {
+            return res.status(200).json({
+                message: "User Logged out successfully",
+            });
+        }
+
+        res.cookie("token", "");
+
+        await tokenBlacklistModel.create({
+            token: token,
+        });
+
+        res.clearCookie("token");
+
+        return res.status(200).json({
             message: "User Logged out successfully",
         });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || "Internal server error",
+            status: "Failed",
+        });
     }
-
-    res.cookie("token", "");
-
-    await tokenBlacklistModel.create({
-        token: token,
-    });
-
-    res.clearCookie("token");
-
-    return res.status(200).json({
-        message: "Used Logged out successfully",
-    });
 }
 
 module.exports = {

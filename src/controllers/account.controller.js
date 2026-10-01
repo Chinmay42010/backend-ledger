@@ -23,34 +23,46 @@ async function createAccountController(req, res) {
 }
 
 async function getUserAccountController(req, res) {
-    const accounts = await accountModel.find({ user: req.user._id });
+    try {
+        const accounts = await accountModel.find({ user: req.user._id });
 
-    return res.status(200).json({
-        message: "Fetched accounts successfully",
-        accounts,
-    });
+        return res.status(200).json({
+            message: "Fetched accounts successfully",
+            accounts,
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: err.message || "Internal server error",
+        });
+    }
 }
 
 async function getAccountBalanceController(req, res) {
-    const { accountId } = req.params;
+    try {
+        const { accountId } = req.params;
 
-    const account = await accountModel.findOne({
-        _id: accountId,
-        user: req.user._id,
-    });
+        const account = await accountModel.findOne({
+            _id: accountId,
+            user: req.user._id,
+        });
 
-    if (!account) {
-        return res.status(400).json({
-            message: "Account not found",
+        if (!account) {
+            return res.status(400).json({
+                message: "Account not found",
+            });
+        }
+
+        const balance = await account.getBalance();
+
+        return res.status(200).json({
+            accountId: account._id,
+            balance: balance,
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: err.message || "Internal server error",
         });
     }
-
-    const balance = await account.getBalance();
-
-    return res.status(200).json({
-        accountId: account._id,
-        balance: balance,
-    });
 }
 
 module.exports = {

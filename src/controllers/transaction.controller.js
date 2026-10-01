@@ -19,10 +19,11 @@ const transctionModel = require("../models/transaction.model");
  */
 
 async function createTransaction(req, res) {
-    /**
-     * 1. Validate request
-     */
-    const { fromAccount, toAccount, amount, idempotencyKey } = req.body;
+    try {
+        /**
+         * 1. Validate request
+         */
+        const { fromAccount, toAccount, amount, idempotencyKey } = req.body;
 
     if (!fromAccount || !toAccount || !amount || !idempotencyKey) {
         return res.status(400).json({
@@ -100,6 +101,11 @@ async function createTransaction(req, res) {
     if (balance < amount) {
         return res.status(400).json({
             message: `Insufficient Balance. Current balance is ${balance}, requested amount is ${amount}`,
+        });
+    }
+    } catch (err) {
+        return res.status(500).json({
+            message: err.message || "Internal server error",
         });
     }
 
@@ -224,8 +230,9 @@ async function createInitialFundsTransaction(req, res) {
         });
     }
 
-    const session = await mongoose.startSession();
+    let session;
     try {
+        session = await mongoose.startSession();
         session.startTransaction();
 
         const transaction = new transctionModel({
@@ -270,12 +277,16 @@ async function createInitialFundsTransaction(req, res) {
             transaction: transaction,
         });
     } catch (err) {
-        await session.abortTransaction();
+        if (session) {
+            await session.abortTransaction();
+        }
         return res.status(500).json({
             message: err.message || "Internal server error",
         });
     } finally {
-        session.endSession();
+        if (session) {
+            await session.endSession();
+        }
     }
 }
 
