@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LEDGER / API PLAYGROUND</title>
+<style>
+  :root {
+    --bg: #f2f0ea;
+    --ink: #111;
+    --card: #fff;
+    --accent: #2d6cdf;
+    --ok: #0a7a3d;
+    --fail: #c1121f;
+    --line: 2px solid var(--ink);
+  }
+  * { box-sizing: border-box; border-radius: 0 !important; }
+  body { font-family: "Courier New", Courier, monospace; margin: 0; background: var(--bg); color: var(--ink); }
+  header { border-bottom: var(--line); padding: 1rem; background: var(--ink); color: var(--bg); }
+  header h1 { margin: 0 0 .25rem; font-size: 1.3rem; letter-spacing: 2px; }
+  header p { margin: 0 0 .75rem; font-size: .8rem; opacity: .75; }
+  .tokenrow { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+  .tokenrow input { flex: 1; min-width: 200px; }
+  input { padding: .5rem .6rem; border: var(--line); background: #fff; color: var(--ink); font-family: inherit; font-size: .85rem; }
+  input:focus { outline: 3px solid var(--accent); outline-offset: 0; }
+  button {
+    padding: .5rem .9rem; border: var(--line); background: var(--accent); color: #fff;
+    font-family: inherit; font-weight: bold; font-size: .85rem; letter-spacing: 1px;
+    cursor: pointer; box-shadow: 4px 4px 0 var(--ink);
+    transition: transform .08s, box-shadow .08s;
+  }
+  button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+  button:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+  button.ghost { background: #fff; color: var(--ink); }
+  nav { display: flex; border-bottom: var(--line); background: var(--card); }
+  nav button {
+    flex: 1; background: var(--card); color: var(--ink); border: none;
+    border-right: var(--line); box-shadow: none; padding: .8rem; font-size: .95rem;
+  }
+  nav button:last-child { border-right: none; }
+  nav button:hover { transform: none; box-shadow: none; background: #eee; }
+  nav button.active { background: var(--ink); color: var(--bg); }
+  nav button.active:hover { background: var(--ink); }
+  main { padding: 1rem; max-width: 900px; margin: 0 auto; }
+  section { display: none; }
+  section.active { display: block; }
+  section > h2 { font-size: 1rem; letter-spacing: 2px; border-bottom: var(--line); padding-bottom: .4rem; }
+  .card { background: var(--card); border: var(--line); box-shadow: 6px 6px 0 var(--ink); padding: 1rem; margin: 0 0 1rem; }
+  .card h3 { margin: 0 0 .2rem; font-size: .95rem; }
+  .card h3 .m { display: inline-block; background: var(--ink); color: var(--bg); padding: .1rem .45rem; margin-right: .5rem; font-size: .8rem; }
+  .card h3 .m.get { background: var(--ok); }
+  .card p.hint { margin: 0 0 .5rem; font-size: .78rem; opacity: .65; }
+  .card label { display: block; font-size: .75rem; font-weight: bold; margin: .6rem 0 .2rem; letter-spacing: 1px; }
+  .card input { width: 100%; }
+  .row { display: flex; gap: .5rem; margin-top: .8rem; }
+  .row button { flex: 1; }
+  pre { background: #0d0d0d; color: #e8e8e8; border: var(--line); padding: .6rem; max-height: 260px; overflow: auto; font-size: .78rem; white-space: pre-wrap; margin: .8rem 0 0; }
+  .ok { color: #7ee2a8; font-weight: bold; } .fail { color: #ff9d9d; font-weight: bold; }
+  #status { font-size: .85rem; font-weight: bold; }
+  footer { text-align: center; font-size: .75rem; padding: 1.5rem; opacity: .6; }
+</style>
+</head>
+<body>
+<header>
+  <h1>LEDGER / API PLAYGROUND</h1>
+  <p>8 endpoints. Paste a JWT once, test everything. Same origin, no CORS.</p>
+  <div class="tokenrow">
+    <input id="token" placeholder="JWT — auto-filled on login/register" />
+    <button onclick="saveToken()">SAVE</button>
+    <button class="ghost" onclick="clearToken()">CLEAR</button>
+    <span id="status"></span>
+  </div>
+</header>
+
+<nav>
+  <button id="tab-auth" class="active" onclick="tab('auth')">AUTH (3)</button>
+  <button id="tab-accounts" onclick="tab('accounts')">ACCOUNTS (3)</button>
+  <button id="tab-transactions" onclick="tab('transactions')">TRANSACTIONS (2)</button>
+  <button id="tab-guide" onclick="tab('guide')">GUIDE</button>
+</nav>
+
+<main>
+  <section id="sec-auth" class="active">
+    <h2>// AUTH</h2>
+
+    <div class="card">
+      <h3><span class="m">POST</span>/api/auth/register</h3>
+      <p class="hint">Public. Creates user, returns JWT.</p>
+      <label>NAME</label><input id="r-name" value="Asha" />
+      <label>EMAIL</label><input id="r-email" value="asha@example.com" />
+      <label>PASSWORD (MIN 6)</label><input id="r-pass" value="secret123" type="password" />
+      <div class="row"><button onclick="register()">SEND →</button></div>
+      <pre id="o-register">—</pre>
+    </div>
+
+    <div class="card" id="login-card">
+      <h3><span class="m">POST</span>/api/auth/login</h3>
+      <p class="hint">Public. Returns JWT, auto-fills token box.</p>
+      <label>EMAIL</label><input id="l-email" value="asha@example.com" />
+      <label>PASSWORD</label><input id="l-pass" value="secret123" type="password" />
+      <div class="row"><button onclick="login()">SEND →</button></div>
+      <pre id="o-login">—</pre>
+    </div>
+
+    <div class="card">
+      <h3><span class="m">POST</span>/api/auth/logout</h3>
+      <p class="hint">Auth. Blacklists current token.</p>
+      <div class="row"><button onclick="logout()">SEND →</button></div>
+      <pre id="o-logout">—</pre>
+    </div>
+  </section>
+
+  <section id="sec-accounts">
+    <h2>// ACCOUNTS</h2>
+
+    <div class="card">
+      <h3><span class="m">POST</span>/api/accounts</h3>
+      <p class="hint">Auth. Creates ACTIVE / INR account. No body.</p>
+      <div class="row"><button onclick="createAccount()">SEND →</button></div>
+      <pre id="o-cacc">—</pre>
+    </div>
+
+    <div class="card">
+      <h3><span class="m get">GET</span>/api/accounts</h3>
+      <p class="hint">Auth. Lists my accounts.</p>
+      <div class="row"><button onclick="listAccounts()">SEND →</button></div>
+      <pre id="o-lacc">—</pre>
+    </div>
+
+    <div class="card">
+      <h3><span class="m get">GET</span>/api/accounts/balance/:id</h3>
+      <p class="hint">Auth, owner only. CREDIT − DEBIT from ledger.</p>
+      <label>ACCOUNT ID</label><input id="b-id" placeholder="<accountId>" />
+      <div class="row"><button onclick="getBalance()">SEND →</button></div>
+      <pre id="o-bal">—</pre>
+    </div>
+  </section>
+
+  <section id="sec-transactions">
+    <h2>// TRANSACTIONS</h2>
+
+    <div class="card" style="background:#111;color:#f2f0ea;">
+      <h3>■ DEMO SYSTEM ACCOUNT</h3>
+      <p class="hint" style="color:#f2f0ea;opacity:.8;">Initial-funds needs a system-user token. Login as below, then use that token here.</p>
+      <p style="font-size:.85rem;">EMAIL: <b>system@gmail.com</b><br />PASSWORD: <b>SystemFunds2026</b></p>
+      <div class="row">
+        <button class="ghost" onclick="fillSystemLogin()">FILL SYSTEM LOGIN ↓</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="m">POST</span>/api/transactions/system/initial-funds</h3>
+      <p class="hint">System-user token only. Funds an account. Do this first.</p>
+      <label>TO ACCOUNT</label><input id="f-to" placeholder="<receiverAccountId>" />
+      <label>AMOUNT</label><input id="f-amt" value="10000" type="number" />
+      <label>IDEMPOTENCY KEY</label><input id="f-key" placeholder="uuid" />
+      <div class="row">
+        <button class="ghost" onclick="genKey('f-key')">NEW UUID</button>
+        <button onclick="fund()">SEND →</button>
+      </div>
+      <pre id="o-fund">—</pre>
+    </div>
+
+    <div class="card">
+      <h3><span class="m">POST</span>/api/transactions</h3>
+      <p class="hint">Auth. Transfer. Same key = replay, never double-spend.</p>
+      <label>FROM ACCOUNT</label><input id="t-from" placeholder="<senderAccountId>" />
+      <label>TO ACCOUNT</label><input id="t-to" placeholder="<receiverAccountId>" />
+      <label>AMOUNT</label><input id="t-amt" value="500" type="number" />
+      <label>IDEMPOTENCY KEY</label><input id="t-key" placeholder="uuid" />
+      <div class="row">
+        <button class="ghost" onclick="genKey('t-key')">NEW UUID</button>
+        <button onclick="transfer()">SEND →</button>
+      </div>
+      <pre id="o-tx">—</pre>
+    </div>
+  </section>
+
+  <section id="sec-guide">
+    <h2>// API GUIDE</h2>
+
+    <div class="card">
+      <h3>■ 60-SECOND FLOW</h3>
+      <p class="hint">Do it in this order. Token is auto-saved on login/register.</p>
+      <p style="font-size:.85rem;line-height:1.9;">
+        1. AUTH → login (or register). Token fills itself.<br />
+        2. ACCOUNTS → POST /api/accounts → save the returned <b>_id</b>.<br />
+        3. TRANSACTIONS → initial-funds (system token) to put money in.<br />
+        4. TRANSACTIONS → transfer between two accounts (fresh UUID each try).<br />
+        5. ACCOUNTS → balance/:id to verify. Replay same key → same tx, no double-spend.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>■ ENDPOINTS</h3>
+      <p style="font-size:.82rem;line-height:2;">
+        <b>POST</b> /api/auth/register — public — {name, email, password} → 201 + JWT<br />
+        <b>POST</b> /api/auth/login — public — {email, password} → 200 + JWT<br />
+        <b>POST</b> /api/auth/logout — auth — no body → 200, token blacklisted<br />
+        <b>POST</b> /api/accounts — auth — no body → 201 ACTIVE/INR account<br />
+        <b>GET</b> /api/accounts — auth — → 200 my accounts<br />
+        <b>GET</b> /api/accounts/balance/:id — auth, owner — → 200 {accountId, balance}<br />
+        <b>POST</b> /api/transactions — auth — {fromAccount, toAccount, amount, idempotencyKey} → 200<br />
+        <b>POST</b> /api/transactions/system/initial-funds — system user — {toAccount, amount, idempotencyKey} → 201
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>■ ERROR CHEAT-SHEET</h3>
+      <p style="font-size:.82rem;line-height:2;">
+        <b>401</b> missing/invalid token → login again.<br />
+        <b>403</b> not a system user → initial-funds needs the demo system token.<br />
+        <b>400</b> System user account not found → create an account while logged in as system first.<br />
+        <b>400</b> Insufficient Balance → fund the sender first.<br />
+        <b>400</b> invalid toAccount → check the ID.<br />
+        Same idempotencyKey twice → original transaction returned, <b>not</b> an error.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>■ RULES</h3>
+      <p style="font-size:.82rem;line-height:2;">
+        Auth header <b>Authorization: Bearer &lt;token&gt;</b> is attached automatically from the token box.<br />
+        Balances = CREDIT − DEBIT from immutable ledger entries, never stored.<br />
+        ENTER key inside any card sends that card (same as SEND →).
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer>backend-ledger</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const tokenBox = $("token"), statusEl = $("status");
+
+  tokenBox.value = localStorage.getItem("ledger_token") || "";
+  renderStatus();
+
+  function tab(name) {
+    for (const s of ["auth", "accounts", "transactions", "guide"]) {
+      $("sec-" + s).classList.toggle("active", s === name);
+      $("tab-" + s).classList.toggle("active", s === name);
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function saveToken() { localStorage.setItem("ledger_token", tokenBox.value.trim()); renderStatus(); }
+  function clearToken() { localStorage.removeItem("ledger_token"); tokenBox.value = ""; renderStatus(); }
+  function setToken(t) { if (t) { tokenBox.value = t; saveToken(); } }
+  function renderStatus() { const t = tokenBox.value.trim(); statusEl.innerHTML = t ? '<span class="ok">● TOKEN SET</span>' : '<span class="fail">○ NO TOKEN</span>'; }
+  tokenBox.addEventListener("input", renderStatus);
+  function genKey(id) { $(id).value = crypto.randomUUID(); }
+  function fillSystemLogin() {
+    tab("auth");
+    $("l-email").value = "system@gmail.com";
+    $("l-pass").value = "SystemFunds2026";
+    const card = $("login-card");
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.style.background = "#fff7cc";
+    toast("✓ SYSTEM CREDENTIALS FILLED — HIT SEND → TO LOGIN");
+    setTimeout(() => { card.style.background = ""; }, 3000);
+  }
+
+  function toast(msg) {
+    let t = $("toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "toast";
+      t.style.cssText = "position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#111;color:#f2f0ea;border:2px solid #f2f0ea;box-shadow:4px 4px 0 #2d6cdf;padding:.6rem 1rem;font-weight:bold;font-size:.85rem;z-index:99;";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(t._h);
+    t._h = setTimeout(() => { t.style.display = "none"; }, 3500);
+  }
+
+  // ENTER inside any input = click that container's SEND button
+  document.querySelectorAll(".card input, .tokenrow input").forEach((el) => {
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const scope = el.closest(".card") || el.closest("header");
+      const send = scope && scope.querySelector("button:not(.ghost)");
+      if (send) send.click();
+    });
+  });
+
+  async function api(method, path, body) {
+    const headers = { "Content-Type": "application/json" };
+    const t = tokenBox.value.trim();
+    if (t) headers["Authorization"] = "Bearer " + t;
+    try {
+      const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      const data = await res.json().catch(() => ({}));
+      return { status: res.status, data };
+    } catch (e) { return { status: "NETWORK ERROR", data: { message: e.message } }; }
+  }
+
+  function show(elId, status, data) {
+    $(elId).innerHTML = `<span class="${String(status).startsWith("2") ? "ok" : "fail"}">HTTP ${status}</span>\n` +
+      JSON.stringify(data, null, 2);
+  }
+
+  async function register() {
+    const r = await api("POST", "/api/auth/register", { name: $("r-name").value, email: $("r-email").value, password: $("r-pass").value });
+    setToken(r.data.token); show("o-register", r.status, r.data);
+  }
+  async function login() {
+    const r = await api("POST", "/api/auth/login", { email: $("l-email").value, password: $("l-pass").value });
+    setToken(r.data.token); show("o-login", r.status, r.data);
+  }
+  async function logout() {
+    const r = await api("POST", "/api/auth/logout");
+    if (r.status === 200) clearToken(); show("o-logout", r.status, r.data);
+  }
+  async function createAccount() {
+    const r = await api("POST", "/api/accounts", {});
+    show("o-cacc", r.status, r.data);
+  }
+  async function listAccounts() {
+    const r = await api("GET", "/api/accounts");
+    show("o-lacc", r.status, r.data);
+  }
+  async function getBalance() {
+    const r = await api("GET", "/api/accounts/balance/" + $("b-id").value.trim());
+    show("o-bal", r.status, r.data);
+  }
+  async function transfer() {
+    const r = await api("POST", "/api/transactions", { fromAccount: $("t-from").value.trim(), toAccount: $("t-to").value.trim(), amount: Number($("t-amt").value), idempotencyKey: $("t-key").value.trim() });
+    show("o-tx", r.status, r.data);
+  }
+  async function fund() {
+    const r = await api("POST", "/api/transactions/system/initial-funds", { toAccount: $("f-to").value.trim(), amount: Number($("f-amt").value), idempotencyKey: $("f-key").value.trim() });
+    show("o-fund", r.status, r.data);
+  }
+</script>
+</body>
+</html>
